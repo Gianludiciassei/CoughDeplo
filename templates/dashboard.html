@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="sidebar">
+    <h2>Cough Monitor</h2>
+    <p><strong>Patient</strong><br>PX-3571</p>
+</div>
+
+<div class="main full">
+
+    <div class="top-bar">
+        <a class="home-btn" href="/patients">🏠 Home</a>
+        <div class="tabs">
+            <a class="tab active" href="/dashboard">Dashboard</a>
+            <a class="tab" href="/graphs">Graphs</a>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Tosse Totale</h2>
+        <h1 id="totalCoughs">0</h1>
+    </div>
+
+    <div class="card">
+        <h2>Battery Status</h2>
+        <div class="battery-bar">
+            <div id="batteryBar"></div>
+        </div>
+        <p id="batteryText"></p>
+    </div>
+
+    <div class="card">
+        <h2>Colpi di tosse nelle ultime ore</h2>
+        <table id="hourTable"></table>
+    </div>
+
+</div>
+
+<script>
+const BATTERY_MAX = 4.2;
+const BATTERY_MIN = 2.8;
+
+async function loadState() {
+    const res = await fetch("/api/state");
+    const state = await res.json();
+
+    document.getElementById("totalCoughs").innerText = state.total_coughs;
+
+    if (state.battery_voltage !== null) {
+        updateBattery(state.battery_voltage);
+    }
+
+    const table = document.getElementById("hourTable");
+    const nowHour = new Date().getHours();
+
+    table.innerHTML = "<tr><th>Ora</th><th>Colpi</th></tr>";
+    for (let h = 0; h <= nowHour; h++) {
+        table.innerHTML += `
+            <tr>
+                <td>${String(h).padStart(2, '0')}:00</td>
+                <td>${state.hourly_coughs[h]}</td>
+            </tr>`;
+    }
+}
+
+function updateBattery(v) {
+    let pct = (v - BATTERY_MIN) / (BATTERY_MAX - BATTERY_MIN) * 100;
+    pct = Math.max(0, Math.min(100, pct));
+
+    document.getElementById("batteryBar").style.width = pct + "%";
+    document.getElementById("batteryText").innerText =
+        pct.toFixed(0) + "% (" + v.toFixed(2) + " V)";
+}
+
+const ws = new WebSocket("ws://" + location.host + "/ws");
+ws.onmessage = loadState;
+
+loadState();
+</script>
+
+</body>
+</html>
