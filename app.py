@@ -3,7 +3,7 @@ from flask_sock import Sock
 from datetime import datetime
 
 app = Flask(__name__)
-app.secret_key = "CHANGE_THIS_SECRET_KEY"
+app.secret_key = "22bf3ba40229e12273964942c9df361b"
 sock = Sock(app)
 
 # ==============================
