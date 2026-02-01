@@ -8,7 +8,14 @@
 
 <div class="sidebar">
     <h2>Cough Monitor</h2>
-    <p><strong>Patient</strong><br>PX-3571</p>
+
+    <!-- SIDEBAR BATTERY -->
+    <div class="sidebar-battery">
+        <div class="battery-shell">
+            <div id="sidebarBattery" class="battery-level"></div>
+        </div>
+        <span id="sidebarBatteryText">--%</span>
+    </div>
 </div>
 
 <div class="main full">
@@ -24,19 +31,22 @@
     <div class="card">
         <h2>Tosse Totale</h2>
         <h1 id="totalCoughs">0</h1>
+        <button class="reset-btn" onclick="resetAll()">Reset</button>
     </div>
 
     <div class="card">
         <h2>Battery Status</h2>
-        <div class="battery-bar">
-            <div id="batteryBar"></div>
+        <div style="border:2px solid #333;height:25px;border-radius:5px;">
+            <div id="batteryBar" style="height:100%;width:0%;background:green;"></div>
         </div>
         <p id="batteryText"></p>
     </div>
 
     <div class="card">
         <h2>Colpi di tosse nelle ultime ore</h2>
-        <table id="hourTable"></table>
+        <table width="100%" id="hourTable">
+            <tr><th>Ora</th><th>Colpi</th></tr>
+        </table>
     </div>
 
 </div>
@@ -45,6 +55,9 @@
 const BATTERY_MAX = 4.2;
 const BATTERY_MIN = 2.8;
 
+// =====================
+// LOAD STATE
+// =====================
 async function loadState() {
     const res = await fetch("/api/state");
     const state = await res.json();
@@ -57,8 +70,8 @@ async function loadState() {
 
     const table = document.getElementById("hourTable");
     const nowHour = new Date().getHours();
-
     table.innerHTML = "<tr><th>Ora</th><th>Colpi</th></tr>";
+
     for (let h = 0; h <= nowHour; h++) {
         table.innerHTML += `
             <tr>
@@ -68,6 +81,9 @@ async function loadState() {
     }
 }
 
+// =====================
+// BATTERY UPDATE
+// =====================
 function updateBattery(v) {
     let pct = (v - BATTERY_MIN) / (BATTERY_MAX - BATTERY_MIN) * 100;
     pct = Math.max(0, Math.min(100, pct));
@@ -75,10 +91,26 @@ function updateBattery(v) {
     document.getElementById("batteryBar").style.width = pct + "%";
     document.getElementById("batteryText").innerText =
         pct.toFixed(0) + "% (" + v.toFixed(2) + " V)";
+
+    document.getElementById("sidebarBattery").style.height = pct + "%";
+    document.getElementById("sidebarBatteryText").innerText =
+        pct.toFixed(0) + "%";
 }
 
+// =====================
+// RESET
+// =====================
+async function resetAll() {
+    if (!confirm("Reset all counters?")) return;
+    await fetch("/api/reset", { method: "POST" });
+    loadState();
+}
+
+// =====================
+// WEBSOCKET
+// =====================
 const ws = new WebSocket("ws://" + location.host + "/ws");
-ws.onmessage = loadState;
+ws.onmessage = () => loadState();
 
 loadState();
 </script>

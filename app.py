@@ -63,6 +63,18 @@ def api_state():
         battery_voltage=last_battery_voltage
     )
 
+@app.route("/api/reset", methods=["POST"])
+def api_reset():
+    global total_coughs, hourly_coughs
+
+    if not session.get("logged_in"):
+        return jsonify({"error": "unauthorized"}), 401
+
+    total_coughs = 0
+    hourly_coughs = [0] * 24
+
+    return jsonify({"status": "ok"})
+
 @app.route("/logout")
 def logout():
     session.clear()
